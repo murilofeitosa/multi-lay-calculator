@@ -10,6 +10,7 @@
     --bg: #f4f6f8;
     --card: #ffffff;
     --green: #10ac84;
+    --green-light: #1dd1a1;
     --red: #ee5253;
     --border: #c8d6e5;
     --primary: #2e86de;
@@ -110,7 +111,7 @@ button:active {
     background: var(--card);
     padding: 16px;
     border-radius: 12px;
-    border-left: 6px solid var(--green);
+    border-left: 6px solid var(--border);
     box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     display: flex;
     flex-direction: column;
@@ -164,6 +165,34 @@ button:active {
 .stake-valor {
     font-size: 1.2rem;
     color: var(--primary);
+}
+
+.box-green {
+    background: linear-gradient(135deg, var(--green), var(--green-light));
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(16, 172, 132, 0.3);
+}
+
+.box-green-title {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+.box-green-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.box-green-desc {
+    font-size: 0.85rem;
+    opacity: 0.8;
 }
 
 @keyframes fadeIn {
@@ -291,25 +320,30 @@ function calcular() {
         });
     }
 
-    // cálculo de lucro
+    // CÁLCULO DE LUCRO REAL
+    // O lucro real do Lay Dutching acontece quando NENHUM dos resultados acontece.
+    // Nesse caso, você ganha a soma de todas as stakes.
     let somaStakes = stakes.reduce((a,b)=>a + (isNaN(b)?0:b),0);
-    let lucros = [];
+    let lucroGreen = somaStakes; 
+
+    // Os "lucros" individuais são na verdade o Saldo (Prejuízo) se aquele resultado específico acontecer.
+    let saldosRed = [];
 
     for (let i = 0; i < n; i++) {
-        let lucro = somaStakes - stakes[i] - responsabilidades[i];
-        lucros.push(lucro);
+        let saldo = somaStakes - stakes[i] - responsabilidades[i];
+        saldosRed.push(saldo);
     }
 
-    let pior = Math.min(...lucros);
-    let melhor = Math.max(...lucros);
+    let piorRed = Math.min(...saldosRed);
+    let melhorRed = Math.max(...saldosRed);
 
     // render
     let html = "";
-    let soma = 0;
+    let somaResp = 0;
     let alerta = false;
 
     for (let i = 0; i < n; i++) {
-        soma += responsabilidades[i];
+        somaResp += responsabilidades[i];
         if (forcadas[i]) alerta = true;
 
         html += `
@@ -326,9 +360,11 @@ function calcular() {
             
             <button onclick="copiar(${i}, this)" style="margin-bottom: 8px;">Copiar Stake</button>
             
-            <div style="font-size: 0.9rem;">
+            <div style="font-size: 0.9rem; margin-top: 5px;">
                 <div>Responsabilidade: <strong>${formatarMoeda(responsabilidades[i])}</strong></div>
-                <div>Lucro no cenário: <strong style="color: ${lucros[i] >= 0 ? 'var(--green)' : 'var(--red)'}">${formatarMoeda(lucros[i])}</strong></div>
+                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">
+                    Se der RED aqui: <strong style="color: var(--red)">${formatarMoeda(saldosRed[i])}</strong>
+                </div>
             </div>
         </div>`;
     }
@@ -337,10 +373,16 @@ function calcular() {
 
     document.getElementById("total").innerHTML = `
         <div class="resultado">
-            <div style="margin-bottom: 10px;">Total Responsabilidade: <strong>${formatarMoeda(soma)}</strong></div>
-            <div style="margin-bottom: 5px;">Pior cenário: <strong style="color: ${pior >= 0 ? 'var(--green)' : 'var(--red)'}">${formatarMoeda(pior)}</strong></div>
-            <div>Melhor cenário: <strong style="color: ${melhor >= 0 ? 'var(--green)' : 'var(--red)'}">${formatarMoeda(melhor)}</strong></div>
-            ${alerta ? "<div style='color:var(--red); margin-top: 10px; font-size: 0.9rem;'>⚠️ Stake mínima (1.00) aplicada para uma ou mais odds.</div>" : ""}
+            <div class="box-green">
+                <div class="box-green-title">Lucro se der GREEN</div>
+                <div class="box-green-value">+ ${formatarMoeda(lucroGreen)}</div>
+                <div class="box-green-desc">(Se nenhum dos Lays bater, você ganha a soma das stakes)</div>
+            </div>
+
+            <div style="margin-bottom: 10px;">Responsabilidade Total Distribuída: <strong>${formatarMoeda(somaResp)}</strong></div>
+            <div style="margin-bottom: 5px; font-size: 0.9rem;">Saldo no Pior RED: <strong style="color: var(--red)">${formatarMoeda(piorRed)}</strong></div>
+            <div style="font-size: 0.9rem;">Saldo no Melhor RED: <strong style="color: var(--red)">${formatarMoeda(melhorRed)}</strong></div>
+            ${alerta ? "<div style='color:var(--red); margin-top: 10px; font-size: 0.9rem;'>⚠️ Stake mínima (1.00) aplicada para uma ou mais odds. O red não ficará 100% simétrico.</div>" : ""}
         </div>
     `;
 }
