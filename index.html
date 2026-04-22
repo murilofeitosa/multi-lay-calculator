@@ -1,8 +1,226 @@
-    // cálculo de lucro por cenário
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Multi LAY Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --green: #27ae60;
+    --red: #e74c3c;
+    --border: #dcdde1;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+}
+
+.header {
+    background: #2d3436;
+    color: #fff;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
+
+.panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: var(--card);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.panel input {
+    padding: 8px;
+    width: 200px;
+}
+
+button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #0984e3;
+    color: #fff;
+}
+
+button:hover { opacity: 0.9; }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.card {
+    background: var(--card);
+    padding: 12px;
+    border-radius: 10px;
+    border-left: 6px solid var(--green);
+}
+
+.card.alerta {
+    border-left-color: var(--red);
+}
+
+.badge {
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: var(--red);
+    color: #fff;
+}
+
+.linha {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.linha input {
+    flex: 1;
+    padding: 6px;
+}
+
+.linha button {
+    background: var(--red);
+}
+
+.resultado {
+    margin-top: 20px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">Calculadora Multi LAY</div>
+
+<div class="container">
+
+<div class="panel">
+    <input type="number" id="banca" placeholder="Responsabilidade Total (R$)">
+    <button onclick="addOdd()">+ Linha</button>
+    <button onclick="copiarTudo()">Copiar Stakes</button>
+    <button onclick="resetar()">Zerar</button>
+</div>
+
+<div id="odds-container"></div>
+
+<div class="grid" id="resultado"></div>
+
+<div class="resultado" id="total"></div>
+
+</div>
+
+<script>
+
+function addOdd(valor="") {
+    let div = document.createElement("div");
+    div.className = "linha";
+
+    let input = document.createElement("input");
+    input.type = "number";
+    input.step = "0.01";
+    input.placeholder = "Odd Lay";
+    input.value = valor;
+    input.oninput = calcular;
+
+    let del = document.createElement("button");
+    del.innerText = "X";
+    del.onclick = () => { div.remove(); calcular(); };
+
+    div.appendChild(input);
+    div.appendChild(del);
+
+    document.getElementById("odds-container").appendChild(div);
+}
+
+addOdd();
+addOdd();
+
+document.getElementById("banca").oninput = calcular;
+
+function calcular() {
+    let inputs = document.querySelectorAll("#odds-container input");
+    let banca = parseFloat(document.getElementById("banca").value);
+
+    let odds = [];
+    inputs.forEach(i => {
+        if (i.value) odds.push(parseFloat(i.value));
+    });
+
+    if (!banca || odds.length === 0) {
+        document.getElementById("resultado").innerHTML = "";
+        document.getElementById("total").innerHTML = "";
+        return;
+    }
+
+    // validação
+    if (odds.some(o => o <= 1)) {
+        document.getElementById("total").innerHTML = "Odds inválidas (<=1)";
+        return;
+    }
+
+    let n = odds.length;
+    let stakes = new Array(n).fill(0);
+    let responsabilidades = new Array(n).fill(0);
+    let forçadas = new Array(n).fill(false);
+
+    let respBase = banca / n;
+
+    // distribuição inicial
+    for (let i = 0; i < n; i++) {
+        let stake = respBase / (odds[i] - 1);
+
+        if (stake < 1) {
+            stake = 1;
+            forçadas[i] = true;
+        }
+
+        stakes[i] = stake;
+        responsabilidades[i] = stake * (odds[i] - 1);
+    }
+
+    // ajuste para manter responsabilidade total
+    let usada = responsabilidades.reduce((a,b)=>a+b,0);
+    let restante = banca - usada;
+
+    let validos = [];
+    for (let i = 0; i < n; i++) {
+        if (!forçadas[i]) validos.push(i);
+    }
+
+    if (validos.length > 0 && restante > 0) {
+        let extra = restante / validos.length;
+
+        validos.forEach(i => {
+            responsabilidades[i] += extra;
+            stakes[i] = responsabilidades[i] / (odds[i] - 1);
+        });
+    }
+
+    // cálculo de lucro (CORRIGIDO)
+    let somaStakes = stakes.reduce((a,b)=>a + (isNaN(b)?0:b),0);
     let lucros = [];
 
     for (let i = 0; i < n; i++) {
-        let somaStakes = stakes.reduce((a,b)=>a+b,0);
         let lucro = somaStakes - stakes[i] - responsabilidades[i];
         lucros.push(lucro);
     }
@@ -17,18 +235,16 @@
 
     for (let i = 0; i < n; i++) {
         soma += responsabilidades[i];
-
         if (forçadas[i]) alerta = true;
 
         html += `
         <div class="card ${forçadas[i] ? 'alerta' : ''}">
-            <div class="card-header">
-                <strong>Linha ${i+1}</strong>
-                ${forçadas[i] ? '<span class="badge">Stake mínima</span>' : ''}
-            </div>
+            <strong>Linha ${i+1}</strong><br>
             Odd: ${odds[i]}<br>
             Stake: <strong id="stake-${i}">${stakes[i].toFixed(2)}</strong>
-            <button onclick="copiar(${i})">Copiar</button><br>
+            <button onclick="copiar(${i})">Copiar</button>
+            ${forçadas[i] ? '<span class="badge">Stake mínima</span>' : ''}
+            <br>
             Responsabilidade: R$ ${responsabilidades[i].toFixed(2)}<br>
             <b>Lucro cenário:</b> R$ ${lucros[i].toFixed(2)}
         </div>`;
@@ -42,3 +258,28 @@
         <b>Melhor cenário:</b> R$ ${melhor.toFixed(2)}
         ${alerta ? "<br><span style='color:red'>Stake mínima aplicada.</span>" : ""}
     `;
+}
+
+function copiar(i){
+    navigator.clipboard.writeText(document.getElementById(`stake-${i}`).innerText);
+}
+
+function copiarTudo(){
+    let arr=[];
+    document.querySelectorAll("[id^='stake-']").forEach(e=>arr.push(e.innerText));
+    navigator.clipboard.writeText(arr.join(" | "));
+}
+
+function resetar(){
+    document.getElementById("odds-container").innerHTML="";
+    document.getElementById("resultado").innerHTML="";
+    document.getElementById("total").innerHTML="";
+    document.getElementById("banca").value="";
+    addOdd();
+    addOdd();
+}
+
+</script>
+
+</body>
+</html>
