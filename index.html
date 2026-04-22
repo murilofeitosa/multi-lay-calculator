@@ -7,25 +7,31 @@
 
 <style>
 :root {
-    --bg: #f5f6fa;
+    --bg: #f4f6f8;
     --card: #ffffff;
-    --green: #27ae60;
-    --red: #e74c3c;
-    --border: #dcdde1;
+    --green: #10ac84;
+    --red: #ee5253;
+    --border: #c8d6e5;
+    --primary: #2e86de;
+    --text: #222f3e;
+    --text-muted: #576574;
 }
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg);
+    color: var(--text);
 }
 
 .header {
-    background: #2d3436;
+    background: #222f3e;
     color: #fff;
-    padding: 15px;
+    padding: 20px;
     text-align: center;
-    font-weight: bold;
+    font-size: 1.2rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .container {
@@ -37,41 +43,78 @@ body {
 .panel {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
     background: var(--card);
-    padding: 15px;
-    border-radius: 10px;
+    padding: 20px;
+    border-radius: 12px;
     border: 1px solid var(--border);
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+input {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.15);
 }
 
 .panel input {
-    padding: 8px;
-    width: 200px;
+    width: 220px;
 }
 
 button {
-    padding: 8px 12px;
+    padding: 10px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    background: #0984e3;
+    background: var(--primary);
     color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
 }
 
-button:hover { opacity: 0.9; }
+button:hover { 
+    opacity: 0.9; 
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.btn-danger {
+    background: var(--red);
+}
+
+.btn-secondary {
+    background: var(--text-muted);
+}
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 }
 
 .card {
     background: var(--card);
-    padding: 12px;
-    border-radius: 10px;
+    padding: 16px;
+    border-radius: 12px;
     border-left: 6px solid var(--green);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .card.alerta {
@@ -80,30 +123,52 @@ button:hover { opacity: 0.9; }
 
 .badge {
     font-size: 11px;
-    padding: 3px 6px;
-    border-radius: 4px;
-    background: var(--red);
-    color: #fff;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(238, 82, 83, 0.1);
+    color: var(--red);
+    font-weight: 600;
+    display: inline-block;
+    width: fit-content;
 }
 
 .linha {
     display: flex;
-    gap: 5px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 12px;
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 .linha input {
     flex: 1;
-    padding: 6px;
-}
-
-.linha button {
-    background: var(--red);
+    max-width: 150px;
 }
 
 .resultado {
-    margin-top: 20px;
-    font-weight: bold;
+    margin-top: 24px;
+    background: var(--card);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.row-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stake-valor {
+    font-size: 1.2rem;
+    color: var(--primary);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 </head>
@@ -115,21 +180,28 @@ button:hover { opacity: 0.9; }
 <div class="container">
 
 <div class="panel">
-    <input type="number" id="banca" placeholder="Responsabilidade Total (R$)">
-    <button onclick="addOdd()">+ Linha</button>
-    <button onclick="copiarTudo()">Copiar Stakes</button>
-    <button onclick="resetar()">Zerar</button>
+    <input type="number" id="banca" placeholder="Responsabilidade Total (R$)" step="0.01">
+    <button onclick="addOdd()">+ Adicionar Linha</button>
+    <button onclick="copiarTudo()" class="btn-secondary" id="btn-copiar-tudo">Copiar Todas as Stakes</button>
+    <button onclick="resetar()" class="btn-danger">Zerar Tudo</button>
 </div>
 
 <div id="odds-container"></div>
 
 <div class="grid" id="resultado"></div>
 
-<div class="resultado" id="total"></div>
+<div id="total"></div>
 
 </div>
 
 <script>
+// Formatador de moeda para o padrão brasileiro
+const formatarMoeda = (valor) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+};
+
+// Formatador numérico simples para cópia
+const formatarNumero = (valor) => valor.toFixed(2);
 
 function addOdd(valor="") {
     let div = document.createElement("div");
@@ -144,6 +216,8 @@ function addOdd(valor="") {
 
     let del = document.createElement("button");
     del.innerText = "X";
+    del.className = "btn-danger";
+    del.title = "Remover linha";
     del.onclick = () => { div.remove(); calcular(); };
 
     div.appendChild(input);
@@ -152,6 +226,7 @@ function addOdd(valor="") {
     document.getElementById("odds-container").appendChild(div);
 }
 
+// Inicia com duas linhas
 addOdd();
 addOdd();
 
@@ -174,14 +249,14 @@ function calcular() {
 
     // validação
     if (odds.some(o => o <= 1)) {
-        document.getElementById("total").innerHTML = "Odds inválidas (<=1)";
+        document.getElementById("total").innerHTML = "<div class='resultado' style='color: var(--red); font-weight: bold;'>⚠️ Existem odds inválidas (menores ou iguais a 1.00).</div>";
         return;
     }
 
     let n = odds.length;
     let stakes = new Array(n).fill(0);
     let responsabilidades = new Array(n).fill(0);
-    let forçadas = new Array(n).fill(false);
+    let forcadas = new Array(n).fill(false);
 
     let respBase = banca / n;
 
@@ -191,7 +266,7 @@ function calcular() {
 
         if (stake < 1) {
             stake = 1;
-            forçadas[i] = true;
+            forcadas[i] = true;
         }
 
         stakes[i] = stake;
@@ -204,7 +279,7 @@ function calcular() {
 
     let validos = [];
     for (let i = 0; i < n; i++) {
-        if (!forçadas[i]) validos.push(i);
+        if (!forcadas[i]) validos.push(i);
     }
 
     if (validos.length > 0 && restante > 0) {
@@ -216,7 +291,7 @@ function calcular() {
         });
     }
 
-    // cálculo de lucro (CORRIGIDO)
+    // cálculo de lucro
     let somaStakes = stakes.reduce((a,b)=>a + (isNaN(b)?0:b),0);
     let lucros = [];
 
@@ -235,50 +310,85 @@ function calcular() {
 
     for (let i = 0; i < n; i++) {
         soma += responsabilidades[i];
-        if (forçadas[i]) alerta = true;
+        if (forcadas[i]) alerta = true;
 
         html += `
-        <div class="card ${forçadas[i] ? 'alerta' : ''}">
-            <strong>Linha ${i+1}</strong><br>
-            Odd: ${odds[i]}<br>
-            Stake: <strong id="stake-${i}">${stakes[i].toFixed(2)}</strong>
-            <button onclick="copiar(${i})">Copiar</button>
-            ${forçadas[i] ? '<span class="badge">Stake mínima</span>' : ''}
-            <br>
-            Responsabilidade: R$ ${responsabilidades[i].toFixed(2)}<br>
-            <b>Lucro cenário:</b> R$ ${lucros[i].toFixed(2)}
+        <div class="card ${forcadas[i] ? 'alerta' : ''}">
+            <div class="row-between">
+                <strong>Linha ${i+1} <span style="color:var(--text-muted); font-weight:normal;">(@${odds[i]})</span></strong>
+                ${forcadas[i] ? '<span class="badge">Stake Mínima</span>' : ''}
+            </div>
+            
+            <div class="row-between" style="margin-top: 8px;">
+                <span>Stake:</span>
+                <strong class="stake-valor" id="stake-${i}">${formatarNumero(stakes[i])}</strong>
+            </div>
+            
+            <button onclick="copiar(${i}, this)" style="margin-bottom: 8px;">Copiar Stake</button>
+            
+            <div style="font-size: 0.9rem;">
+                <div>Responsabilidade: <strong>${formatarMoeda(responsabilidades[i])}</strong></div>
+                <div>Lucro no cenário: <strong style="color: ${lucros[i] >= 0 ? 'var(--green)' : 'var(--red)'}">${formatarMoeda(lucros[i])}</strong></div>
+            </div>
         </div>`;
     }
 
     document.getElementById("resultado").innerHTML = html;
 
     document.getElementById("total").innerHTML = `
-        Total Responsabilidade: R$ ${soma.toFixed(2)}<br>
-        <b>Pior cenário:</b> R$ ${pior.toFixed(2)}<br>
-        <b>Melhor cenário:</b> R$ ${melhor.toFixed(2)}
-        ${alerta ? "<br><span style='color:red'>Stake mínima aplicada.</span>" : ""}
+        <div class="resultado">
+            <div style="margin-bottom: 10px;">Total Responsabilidade: <strong>${formatarMoeda(soma)}</strong></div>
+            <div style="margin-bottom: 5px;">Pior cenário: <strong style="color: ${pior >= 0 ? 'var(--green)' : 'var(--red)'}">${formatarMoeda(pior)}</strong></div>
+            <div>Melhor cenário: <strong style="color: ${melhor >= 0 ? 'var(--green)' : 'var(--red)'}">${formatarMoeda(melhor)}</strong></div>
+            ${alerta ? "<div style='color:var(--red); margin-top: 10px; font-size: 0.9rem;'>⚠️ Stake mínima (1.00) aplicada para uma ou mais odds.</div>" : ""}
+        </div>
     `;
 }
 
-function copiar(i){
-    navigator.clipboard.writeText(document.getElementById(`stake-${i}`).innerText);
+// Função de cópia com feedback visual dinâmico
+function copiar(i, btnElement){
+    let valor = document.getElementById(`stake-${i}`).innerText;
+    navigator.clipboard.writeText(valor).then(() => {
+        let textoOriginal = btnElement.innerText;
+        btnElement.innerText = "Copiado!";
+        btnElement.style.background = "var(--green)";
+        
+        setTimeout(() => {
+            btnElement.innerText = textoOriginal;
+            btnElement.style.background = "";
+        }, 1500);
+    });
 }
 
 function copiarTudo(){
-    let arr=[];
-    document.querySelectorAll("[id^='stake-']").forEach(e=>arr.push(e.innerText));
-    navigator.clipboard.writeText(arr.join(" | "));
+    let arr = [];
+    document.querySelectorAll("[id^='stake-']").forEach(e => arr.push(e.innerText));
+    
+    if(arr.length === 0) return;
+
+    navigator.clipboard.writeText(arr.join(" | ")).then(() => {
+        let btn = document.getElementById("btn-copiar-tudo");
+        let textoOriginal = btn.innerText;
+        btn.innerText = "Tudo Copiado!";
+        btn.style.background = "var(--green)";
+        btn.style.color = "#fff";
+        
+        setTimeout(() => {
+            btn.innerText = textoOriginal;
+            btn.style.background = "";
+            btn.style.color = "";
+        }, 2000);
+    });
 }
 
 function resetar(){
-    document.getElementById("odds-container").innerHTML="";
-    document.getElementById("resultado").innerHTML="";
-    document.getElementById("total").innerHTML="";
-    document.getElementById("banca").value="";
+    document.getElementById("odds-container").innerHTML = "";
+    document.getElementById("resultado").innerHTML = "";
+    document.getElementById("total").innerHTML = "";
+    document.getElementById("banca").value = "";
     addOdd();
     addOdd();
 }
-
 </script>
 
 </body>
