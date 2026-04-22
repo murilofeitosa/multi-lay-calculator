@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Multi LAY Pro</title>
+<style>
+body {
+    font-family: Arial;
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+    background: #f7f7f7;
+}
+
+h2 { margin-bottom: 10px; }
+
+.top-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+input {
+    padding: 6px;
+    width: 140px;
+}
+
+button {
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.linha {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 6px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+/* CORES */
+.ok { border-left: 5px solid #2ecc71; }      /* stake normal */
+.alerta { border-left: 5px solid #e74c3c; }  /* stake mínima */
+
+.badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    margin-left: 5px;
+}
+
+.badge-alerta {
+    background: #e74c3c;
+    color: #fff;
+}
+
+#resultado {
+    margin-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<h2>Calculadora Multi LAY</h2>
+
+<div class="top-bar">
+    <input type="number" id="banca" placeholder="Responsabilidade Total (R$)">
+    <button onclick="addOdd()">+ Linha</button>
+    <button onclick="copiarTudo()">Copiar Stakes</button>
+    <button onclick="resetar()">Zerar Tudo</button>
+</div>
+
+<div id="odds-container"></div>
+
+<div id="resultado"></div>
+
+<script>
+
+function addOdd(valor="") {
+    let div = document.createElement("div");
+    div.className = "linha";
+
+    let input = document.createElement("input");
+    input.type = "number";
+    input.step = "0.01";
+    input.placeholder = "Odd Lay";
+    input.value = valor;
+
+    input.oninput = calcular;
+
+    let del = document.createElement("button");
+    del.innerText = "X";
+    del.onclick = () => { div.remove(); calcular(); };
+
+    div.appendChild(input);
+    div.appendChild(del);
+
+    document.getElementById("odds-container").appendChild(div);
+}
+
+// inicial
+addOdd();
+addOdd();
+
+document.getElementById("banca").oninput = calcular;
+
+function calcular() {
+    let inputs = document.querySelectorAll("#odds-container input");
+    let banca = parseFloat(document.getElementById("banca").value);
+
+    let odds = [];
+    inputs.forEach(i => {
+        if (i.value) odds.push(parseFloat(i.value));
+    });
+
+    if (!banca || odds.length === 0) {
+        document.getElementById("resultado").innerHTML = "";
+        return;
+    }
+
+    let n = odds.length;
+    let stakes = new Array(n).fill(0);
+    let responsabilidades = new Array(n).fill(0);
+    let forçadas = new Array(n).fill(false);
+
+    let respBase = banca / n;
+
+    for (let i = 0; i < n; i++) {
+        let stake = respBase / (odds[i] - 1);
+
+        if (stake < 1) {
+            stakes[i] = 1;
+            responsabilidades[i] = (odds[i] - 1);
+            forçadas[i] = true;
+        } else {
+            stakes[i] = stake;
+            responsabilidades[i] = respBase;
+        }
+    }
+
+    let usada = responsabilidades.reduce((a, b) => a + b, 0);
+    let restante = banca - usada;
+
+    let validos = [];
+    for (let i = 0; i < n; i++) {
+        if (!forçadas[i]) validos.push(i);
+    }
+
+    if (validos.length > 0 && restante > 0) {
+        let extra = restante / validos.length;
+
+        validos.forEach(i => {
+            responsabilidades[i] += extra;
+            stakes[i] = responsabilidades[i] / (odds[i] - 1);
+        });
+    }
+
+    // render
+    let html = "<h3>Distribuição</h3>";
+    let soma = 0;
+    let alertaGlobal = false;
+
+    for (let i = 0; i < n; i++) {
+        soma += responsabilidades[i];
+
+        let classe = forçadas[i] ? "card alerta" : "card ok";
+
+        if (forçadas[i]) alertaGlobal = true;
+
+        html += `
+        <div class="${classe}">
+        <b>Linha ${i+1}</b><br>
+        Odd: ${odds[i]}<br>
+        Stake: <b id="stake-${i}">${stakes[i].toFixed(2)}</b>
+        <button onclick="copiar(${i})">Copiar</button>
+        ${forçadas[i] ? '<span class="badge badge-alerta">Stake mínima aplicada</span>' : ''}
+        <br>
+        Responsabilidade: R$ ${responsabilidades[i].toFixed(2)}
+        </div>`;
+    }
+
+    if (alertaGlobal) {
+        html += `<div style="color:#e74c3c; margin-top:10px;">
+        Atenção: algumas stakes foram ajustadas para o mínimo de R$ 1.
+        </div>`;
+    }
+
+    html += `<br><b>Total Responsabilidade:</b> R$ ${soma.toFixed(2)}`;
+
+    document.getElementById("resultado").innerHTML = html;
+}
+
+function copiar(i) {
+    let texto = document.getElementById(`stake-${i}`).innerText;
+    navigator.clipboard.writeText(texto);
+}
+
+function copiarTudo() {
+    let stakes = [];
+    document.querySelectorAll("[id^='stake-']").forEach(e => {
+        stakes.push(e.innerText);
+    });
+    navigator.clipboard.writeText(stakes.join(" | "));
+}
+
+function resetar() {
+    document.getElementById("odds-container").innerHTML = "";
+    document.getElementById("resultado").innerHTML = "";
+    document.getElementById("banca").value = "";
+
+    addOdd();
+    addOdd();
+}
+
+</script>
+
+</body>
+</html>
